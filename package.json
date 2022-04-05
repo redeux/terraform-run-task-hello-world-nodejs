@@ -1,0 +1,28 @@
+{
+  "name": "terraform-run-task-hello-world-nodejs",
+  "version": "0.0.1",
+  "description": "A Terraform Cloud Run Task Hello World in Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redeux/terraform-run-task-hello-world-nodejs.git"
+  },
+  "keywords": [
+    "Terraform",
+    "Run",
+    "Task",
+    "Server"
+  ],
+  "author": "Phil Sautter",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/redeux/terraform-run-task-hello-world-nodejs/issues"
+  },
+  "homepage": "https://github.com/redeux/terraform-run-task-hello-world-nodejs#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
+}
