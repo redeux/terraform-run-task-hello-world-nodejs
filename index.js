@@ -1,8 +1,8 @@
-const express = require('express')
-const https = require('https')
-const {
-    createHmac,
-} = require('crypto')
+import express from "express"
+import fetch from "node-fetch"
+import {
+    createHmac
+} from "crypto"
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -10,26 +10,38 @@ const port = process.env.PORT || 3000
 // Configure Express middleware to parse the JSON body and validate the HMAC
 app.use(express.json(), validateHmac)
 
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
+    // console.log(`Run Task payload\n${JSON.stringify(req.body, null, 2)}`)
+
     // Send a 200 to tell Terraform Cloud that we recevied the Run Task
     // Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#run-task-request
     res.sendStatus(200)
 
-    // Do some processing on the Run Task request
-    // Schema Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-body
-
     // When a user adds a new Run Task to their Terraform Cloud organization, Terraform Cloud will attempt to 
-    // validate the Run Task address by sending a payload with dummy data. This condition will have to be accounted for.
-    console.log(`Run Task payload\n${JSON.stringify(req.body, null, 2)}`)
+    // validate the Run Task address and HMAC by sending a payload with dummy data. This condition will have to be accounted for.
+    if (req.body.access_token !== "test-token") {
+        const {
+            plan_json_api_url,
+            access_token,
+            organization_name,
+            workspace_id,
+            run_id,
+            task_result_callback_url
+        } = req.body
+        // Do some processing on the Run Task request
+        // Schema Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-body
+        const planJson = await getPlan(plan_json_api_url, access_token)
+        console.log(`Plan ouput for ${organization_name}/${workspace_id}/${run_id}\n${JSON.stringify(planJson, null, 2)}`)
 
-    // Send the results back to Terraform Cloud
-    return sendCallback(req.body.task_result_callback_url, req.body.access_token, 'passed', "Hello World", "http://example.com/runtask/QxZyl")
+        // Send the results back to Terraform Cloud
+        sendCallback(task_result_callback_url, access_token, 'passed', 'Hello World', 'http://example.com/runtask/QxZyl')
+    }
 })
 
-function validateHmac(req, res, next) {
+async function validateHmac(req, res, next) {
     const hmacKey = process.env.HMAC_KEY || 'abc123'
-    const computedHmac = createHmac('sha512', hmacKey).update(JSON.stringify(req.body)).digest('hex')
-    const remoteHmac = req.get('x-tfc-task-signature')
+    const computedHmac = await createHmac('sha512', hmacKey).update(JSON.stringify(req.body)).digest('hex')
+    const remoteHmac = await req.get('x-tfc-task-signature')
     // If the HMAC validation fails, log the error and send an HTTP Status Code 401, Unauthorized
     // Currently undocumented but 401 is the expected response for an invalid HMAC
     if (computedHmac !== remoteHmac) {
@@ -41,7 +53,7 @@ function validateHmac(req, res, next) {
     next()
 }
 
-function sendCallback(callbackUrl, accessToken, status, message, url) {
+async function sendCallback(callbackUrl, accessToken, status, message, url) {
     // Format the payload for the callback
     // Schema Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-body-1
     const data = JSON.stringify({
@@ -55,37 +67,33 @@ function sendCallback(callbackUrl, accessToken, status, message, url) {
         }
     })
 
-    // Parse the URL and options for the callback
-    callbackUrl = new URL(callbackUrl)
     const options = {
-        hostname: callbackUrl.hostname,
-        port: 443,
-        path: callbackUrl.pathname,
         method: 'PATCH',
-        // Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-headers-1
         headers: {
             'Content-Type': 'application/vnd.api+json',
+            'Authorization': 'Bearer ' + accessToken
+        },
+        body: data
+    }
+
+    const callback = await fetch(callbackUrl, options)
+}
+
+async function getPlan(url, accessToken) {
+    const options = {
+        method: 'GET',
+        headers: {
             'Authorization': 'Bearer ' + accessToken
         }
     }
 
-    // Send the callback
-    const req = https.request(options, res => {
-        console.log(`Callback statusCode: ${res.statusCode}`)
+    // The first URL returns a redirect
+    // The fetch API follows the redirect by default
+    const plan = await fetch(url, options)
+    return plan.json()
 
-        res.on('data', d => {
-            process.stdout.write(d)
-        })
-    })
-
-    req.on('error', error => {
-        console.error(error)
-    })
-
-    req.write(data)
-    req.end()
 }
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+    console.log(`Run Task Hello World app listening on port ${port}`)
 })

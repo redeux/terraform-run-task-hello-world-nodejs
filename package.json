@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "A Terraform Cloud Run Task Hello World in Node.js",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,7 +25,8 @@
   },
   "homepage": "https://github.com/redeux/terraform-run-task-hello-world-nodejs#readme",
   "dependencies": {
-    "express": "^4.17.3"
+    "express": "^4.17.3",
+    "node-fetch": "^3.2.3"
   },
   "engines": {
     "node": "16.x"
