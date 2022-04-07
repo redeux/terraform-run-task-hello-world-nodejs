@@ -34,13 +34,13 @@ app.post('/', async (req, res) => {
         console.log(`Plan ouput for ${organization_name}/${workspace_id}/${run_id}\n${JSON.stringify(planJson, null, 2)}`)
 
         // Send the results back to Terraform Cloud
-        sendCallback(task_result_callback_url, access_token, 'passed', 'Hello World', 'http://example.com/runtask/QxZyl')
+        await sendCallback(task_result_callback_url, access_token, 'passed', 'Hello World', 'http://example.com/runtask/QxZyl')
     }
 })
 
 async function validateHmac(req, res, next) {
     const hmacKey = process.env.HMAC_KEY || 'abc123'
-    const computedHmac = await createHmac('sha512', hmacKey).update(JSON.stringify(req.body)).digest('hex')
+    const computedHmac = createHmac('sha512', hmacKey).update(JSON.stringify(req.body)).digest('hex')
     const remoteHmac = await req.get('x-tfc-task-signature')
     // If the HMAC validation fails, log the error and send an HTTP Status Code 401, Unauthorized
     // Currently undocumented but 401 is the expected response for an invalid HMAC
@@ -76,7 +76,7 @@ async function sendCallback(callbackUrl, accessToken, status, message, url) {
         body: data
     }
 
-    const callback = await fetch(callbackUrl, options)
+    await fetch(callbackUrl, options)
 }
 
 async function getPlan(url, accessToken) {
@@ -96,5 +96,5 @@ async function getPlan(url, accessToken) {
 }
 
 app.listen(port, () => {
-    console.log(`Run Task Hello World app listening on port ${port}`)
+    console.log(`Terraform Run Task Hello World app listening on port ${port}`)
 })
