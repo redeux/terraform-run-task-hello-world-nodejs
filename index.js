@@ -20,6 +20,8 @@ app.post('/', async (req, res) => {
     // When a user adds a new Run Task to their Terraform Cloud organization, Terraform Cloud will attempt to 
     // validate the Run Task address and HMAC by sending a payload with dummy data. This condition will have to be accounted for.
     if (req.body.access_token !== "test-token") {
+        // Do some processing on the Run Task request
+        // Schema Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-body
         const {
             plan_json_api_url,
             access_token,
@@ -28,8 +30,6 @@ app.post('/', async (req, res) => {
             run_id,
             task_result_callback_url
         } = req.body
-        // Do some processing on the Run Task request
-        // Schema Documentation - https://www.terraform.io/cloud-docs/api-docs/run-tasks-integration#request-body
         const planJson = await getPlan(plan_json_api_url, access_token)
         console.log(`Plan ouput for ${organization_name}/${workspace_id}/${run_id}\n${JSON.stringify(planJson, null, 2)}`)
 
@@ -87,7 +87,8 @@ async function getPlan(url, accessToken) {
         }
     }
 
-    // The first URL returns a redirect
+    // The first URL returns a 307 Temporary Redirect with the address of the JSON formatted Terraform Plan
+    // Documentation - https://www.terraform.io/cloud-docs/api-docs/plans#retrieve-the-json-execution-plan
     // The fetch API follows the redirect by default
     const plan = await fetch(url, options)
     return plan.json()
